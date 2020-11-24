@@ -1,16 +1,7 @@
 require('dotenv').config()
-const express = require('express')
-const app = express()
-const cors = require('cors')
-const mongoose = require('mongoose')
 const Blog = require('./models/blog')
+const app = require('./app')
 
-const mongoUrl = process.env.MONGOURI
-
-mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false, useCreateIndex: true })
-
-app.use(cors())
-app.use(express.json())
 
 app.get('/api/blogs', (request, response) => {
     Blog
