@@ -1,0 +1,7 @@
+PUT http://localhost:3003/api/blogs/5fc8db1ec0560653606cb343
+Content-Type: application/json
+
+{
+    "url": "minister.fi",
+    "likes": 7
+}
