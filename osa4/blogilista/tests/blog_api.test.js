@@ -1,9 +1,10 @@
 const mongoose = require('mongoose')
 const supertest = require('supertest')
-const { request } = require('../app')
 const app = require('../app')
 const api = supertest(app)
+const bcrypt = require('bcrypt')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 
 const initialBlogs = [
     {
@@ -17,8 +18,16 @@ const initialBlogs = [
         author: 'Jyrki Sukula',
         url: 'diibabadas',
         likes: 7
+    }, 
+    {
+        title: 'Sepon blogi',
+        author: 'Seppo',
+        url: 'asddada',
+        likes: 3
     }
 ]
+
+let token = null
 
 beforeEach(async () => {
     await Blog.deleteMany({})
@@ -26,6 +35,37 @@ beforeEach(async () => {
     await blogObj.save()
     blogObj = new Blog(initialBlogs[1])
     await blogObj.save()
+
+    // User creation
+    await User.deleteMany({})
+    const saltRounds = 10
+    const hashPW = await bcrypt.hash('jeAHZIa', saltRounds)
+    let userObj = new User(
+        {
+            username: 'Seppo43',
+            name: 'SEpi Sulkala',
+            password: hashPW
+        }
+    )
+    await userObj.save()
+
+    // User login
+    const user = await api
+        .post('/api/login')
+        .send({ username: 'Seppo43', password: 'jeAHZIa' })
+
+    token = user.body.token
+
+    // Post Blog for username Seppo43
+    await api
+        .post('/api/blogs')
+        .set('Authorization', `bearer ${token}`)
+        .send({
+            title: 'Sepon blogi',
+            author: 'Seppo',
+            url: 'asddada',
+            likes: 3
+        })
 })
 
 describe('When there is already two blogs saved in the DB', () => {
@@ -65,6 +105,7 @@ describe('Posting operations', () => {
 
         await api
             .post('/api/blogs')
+            .set('Authorization', `bearer ${token}`)
             .send(newBlog)
             .expect(200)
 
@@ -76,6 +117,20 @@ describe('Posting operations', () => {
 
     })
 
+    test('posting new blog without token', async () => {
+        const newBlog = {
+            title: 'Viiniblogi',
+            author: 'Samu',
+            url: 'diibadaabva',
+            likes: 1
+        }
+
+        await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .expect(401)
+    })
+
     test('posting new blog without likes', async () => {
         const newBlog = {
             title: 'Viiniblogi',
@@ -85,6 +140,7 @@ describe('Posting operations', () => {
 
         await api
             .post('/api/blogs')
+            .set('Authorization', `bearer ${token}`)
             .send(newBlog)
             .expect(200)
 
@@ -101,6 +157,7 @@ describe('Posting operations', () => {
         }
         await api
             .post('/api/blogs')
+            .set('Authorization', `bearer ${token}`)
             .send(newBlog)
             .expect(400)
     })
@@ -130,15 +187,22 @@ describe('Update and remove operations', () => {
     })
 
     test('Removing blog', async () => {
-        const response = await api.get('/api/blogs')
-        const id = response.body[0].id
+
+        const blogs = await api
+            .get('/api/blogs')
+
+
+        const blogBody = blogs.body.filter(blog => blog.title === 'Sepon blogi')
+        const blogID = blogBody[0].id
+
 
         await api
-            .delete(`/api/blogs/${id}`)
+            .delete(`/api/blogs/${blogID}`)
+            .set('Authorization', `bearer ${token}`)
             .expect(204)
 
-        const response2 = await api.get('/api/blogs')
-        expect(response2.body).toHaveLength(1)
+        const response = await api.get('/api/blogs')
+        expect(response.body).toHaveLength(2)
     })
 
 })
