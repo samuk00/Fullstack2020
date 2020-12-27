@@ -1,29 +1,20 @@
 import React from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { connect } from 'react-redux'
 import { likeAnecdote, sortAnecdotes } from '../reducers/anecdoteReducer'
 import { setNotification } from '../reducers/notificationReducer'
 
-const AnecdoteList = () => {
-    const anecdotes = useSelector(state => {
-        if (state.filter === null) {
-            return state.anecdotes.slice().sort((a, b) => {
-                return b.votes - a.votes
-            })
-        }
-        return state.anecdotes.filter(anecdote => anecdote.content.toLowerCase().includes(state.filter.toLowerCase()))
-    })
-    const dispatch = useDispatch()
+const AnecdoteList = (props) => {
 
     const vote = async (anecdote) => {
-        const updatedAnecdote = {...anecdote, votes: anecdote.votes + 1}
-        dispatch(likeAnecdote(anecdote.id, updatedAnecdote))
-        dispatch(sortAnecdotes())
-        dispatch(setNotification(`you voted '${anecdote.content}'`, 5))
+        const updatedAnecdote = { ...anecdote, votes: anecdote.votes + 1 }
+        props.likeAnecdote(anecdote.id, updatedAnecdote)
+        props.sortAnecdotes()
+        props.setNotification(`you voted '${anecdote.content}'`, 5)
     }
 
     return (
         <div>
-            {anecdotes.map(anecdote =>
+            {props.anecdotes.map(anecdote =>
                 <div key={anecdote.id}>
                     <div>
                         {anecdote.content}
@@ -39,4 +30,31 @@ const AnecdoteList = () => {
     )
 }
 
-export default AnecdoteList
+const mapStateToProps = (state) => {
+    if(state.filter === null){
+        return {
+            anecdotes: state.anecdotes.slice().sort((a, b) => {
+                return b.votes - a.votes
+            }),
+            filter: state.filter
+        }
+    }
+
+    return {
+        anecdotes: state.anecdotes.filter(anecdote => anecdote.content.toLowerCase().includes(state.filter.toLowerCase())),
+        filter: state.filter
+    }
+}
+
+const mapDispatchToProps = { 
+    likeAnecdote,
+    sortAnecdotes,
+    setNotification
+ }
+
+const ConnectedAnecdotes = connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(AnecdoteList)
+
+export default ConnectedAnecdotes

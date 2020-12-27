@@ -1,11 +1,14 @@
 const emptyNotification = null
+let timeoutID = null
 
 export const setNotification = (notification, time) => {
     return dispatch => {
-        dispatch({ type: 'SET_NOTIFICATION', data: notification})
-        setTimeout(() => dispatch(removeNotification()), time * 1000);
+        clearTimeout(timeoutID)
+        dispatch({ type: 'SET_NOTIFICATION', data: notification })
+        timeoutID = setTimeout(() => dispatch(removeNotification()), time * 1000)
     }
 }
+
 
 const removeNotification = () => {
     return {
